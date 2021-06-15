@@ -1,0 +1,29 @@
+* {
+    margin: 0;
+    padding: 0;
+    font-family: "AS", "SF";
+}
+
+body {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 600px 600px 1fr;
+    grid-template-rows: 1fr 680px 1fr 20px;
+    grid-template-areas: 
+        "   .   .   .   .   "
+        "   .   hd mn .   "
+        "   .   .   .   .   "
+        "   ft  ft  ft  ft  "
+}
+
+footer {
+    grid-area: ft;
+}
+
+header {
+    grid-area: hd;
+}
+
+main {
+    grid-area: mn;
+}
