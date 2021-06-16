@@ -1,0 +1,8 @@
+@charset "UTF-8";
+@font-face{
+  font-family:"GA1";
+  src:url("fonts/GothicA1.eot");
+  src:url("fonts/GothicA1.eot?#iefix") format("embedded-opentype"),
+      url("fonts/GothicA1.woff") format("woff"),
+      url("fonts/GothicA1.ttf") format("truetype");
+}

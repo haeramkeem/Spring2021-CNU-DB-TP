@@ -1,0 +1,19 @@
+* {
+    margin: 0;
+    padding: 0;
+    /* font-family: "GA1"; */
+    font-size: 15px;
+}
+
+body {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 120px 40px 20px 1fr 20px 40px;
+    grid-template-areas: 
+        "   hd  "
+        "   nv  "
+        "   .   "
+        "   mn  "
+        "   .   "
+        "   ft  "
+}

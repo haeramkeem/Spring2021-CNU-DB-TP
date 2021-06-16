@@ -1,29 +1,169 @@
 * {
     margin: 0;
     padding: 0;
-    font-family: "AS", "SF";
+    font-family: "GA1";
+    font-size: 15px;
 }
 
 body {
     height: 100vh;
     display: grid;
-    grid-template-columns: 1fr 600px 600px 1fr;
-    grid-template-rows: 1fr 680px 1fr 20px;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 20px;
     grid-template-areas: 
-        "   .   .   .   .   "
-        "   .   hd mn .   "
-        "   .   .   .   .   "
-        "   ft  ft  ft  ft  "
+        "   hd mn   "
+        "   ft  ft  ";
 }
 
-footer {
-    grid-area: ft;
+.hover-box:hover {
+    border: 1px dotted black;
+}
+
+.center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+}
+
+a {
+    text-decoration: none;
+    color: black;
+}
+
+.both-hand-side {
+    width: 550px;
+    height: 680px;
+    margin: -340px 0 0 -275px;
 }
 
 header {
     grid-area: hd;
+    border-right: 1px solid black;
+    position: relative;
+}
+
+#left-hand-side {
+    background-image: url(../image/lhs.svg);
+    background-size: cover;
+}
+
+#logo-box {
+    width: 440px;
+    height: 400px;
+    margin: -200px 0 0 -220px;
+    background: white;
+}
+
+#logo-text {
+    font-size: 75px;
+    margin: -188px 0 0 -180px;
 }
 
 main {
     grid-area: mn;
+    position: relative;
+}
+
+#right-hand-side {
+    background-image: url(../image/rhs.svg);
+    background-size: cover;
+}
+
+#sign-box {
+    background: white;
+    width: 440px;
+    height: 220px;
+    margin: -110px 0 0 -220px;
+}
+
+.input-box {
+    position: absolute;
+    width: 240px;
+    height: 60px;
+    left: 40px;
+}
+
+.input-box input {
+    border: 1px solid black;
+    border-radius: 0;
+    outline-style: none;
+    width: 100%;
+}
+
+#signin-id-box {
+    top: 50px;
+}
+
+#signin-pw-box {
+    top: 110px;
+}
+
+.submit-box {
+    position: absolute;
+    border: 1px solid black;
+    background: white;
+}
+
+.submit-box input {
+    width: 100%;
+    height: 100%;
+    outline-style: inset;
+    outline-width: 1px;
+    background: white;
+    color: black;
+}
+
+#signin-submit-box {
+    width: 100px;
+    height: 100px;
+    left: 300px;
+    top: 50px;
+}
+
+#signup-link-box {
+    position: absolute;
+    left: 349px;
+    top: 160px;
+}
+
+#signup-link-box a:hover {
+    text-decoration: underline;
+}
+
+footer {
+    grid-area: ft;
+    border-top: 1px solid black;
+    text-align: center;
+}
+
+/* ----- sign up page ----- */
+
+#signup-box {
+    background: white;
+    width: 320px;
+    height: 340px;
+    margin: -170px 0 0 -160px;
+}
+
+#signup-id-box {
+    top: 20px;
+}
+
+#signup-pw-box {
+    top: 80px;
+}
+
+#signup-name-box {
+    top: 140px;
+}
+
+#signup-email-box {
+    top: 200px;
+}
+
+#signup-submit-box {
+    top: 260px;
+    left: 40px;
+    width: 240px;
+    height: 40px;
 }
