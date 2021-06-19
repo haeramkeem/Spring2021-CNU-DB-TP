@@ -15,6 +15,10 @@ body {
         "   ft  ft  ";
 }
 
+body>* {
+    position: relative;
+}
+
 .hover-box:hover {
     border: 1px dotted black;
 }
@@ -39,12 +43,12 @@ a {
 header {
     grid-area: hd;
     border-right: 1px solid black;
-    position: relative;
 }
 
 #left-hand-side {
-    background-image: url(../image/lhs.svg);
+    background-image: url(../image/sign-lhs-background.svg);
     background-size: cover;
+    background-repeat: no-repeat;
 }
 
 #logo-box {
@@ -61,11 +65,10 @@ header {
 
 main {
     grid-area: mn;
-    position: relative;
 }
 
 #right-hand-side {
-    background-image: url(../image/rhs.svg);
+    background-image: url(../image/sign-rhs-background.svg);
     background-size: cover;
 }
 
@@ -101,7 +104,6 @@ main {
 .submit-box {
     position: absolute;
     border: 1px solid black;
-    background: white;
 }
 
 .submit-box input {

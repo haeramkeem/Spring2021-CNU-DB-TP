@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="30px" height="30px" viewBox="0 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#000000" offset="0%"></stop>
+            <stop stop-color="#000000" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
+            <stop stop-color="#000000" offset="0%"></stop>
+            <stop stop-color="#000000" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="PC" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop-HD" transform="translate(-120.000000, -195.000000)">
+            <g id="Group" transform="translate(120.000000, 195.000000)">
+                <rect id="Rectangle" x="0" y="0" width="30" height="30"></rect>
+                <line x1="15.0143154" y1="20.6108784" x2="3.50720084" y2="8.78563788" id="Line" stroke="url(#linearGradient-1)" stroke-width="2" stroke-linecap="square" transform="translate(9.260758, 14.698258) rotate(-0.781153) translate(-9.260758, -14.698258) "></line>
+                <line x1="15.0137499" y1="20.6389396" x2="26.8397278" y2="9.13258273" id="Line-2" stroke="url(#linearGradient-2)" stroke-width="2" stroke-linecap="square" transform="translate(20.926739, 14.885761) rotate(-0.784825) translate(-20.926739, -14.885761) "></line>
+            </g>
+        </g>
+    </g>
+</svg>
