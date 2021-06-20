@@ -1,3 +1,4 @@
+/*-----Global-----*/
 * {
     margin: 0;
     padding: 0;
@@ -5,6 +6,7 @@
     font-size: 20px;
 }
 
+/*-----Tag Selector-----*/
 body {
     height: 100vh;
     display: grid;
@@ -19,21 +21,54 @@ body {
         "   .   ft  .   "
 }
 
+input, select {
+    width: 100%;
+    height: 100%;
+    color: black;
+    background: white;
+    cursor: pointer;
+}
+
 a {
     color: black;
     text-decoration: none;
 }
 
-body>* {
-    position: relative;
-}
-
+/*-----Global Class Selector-----*/
 .center {
     position: absolute;
     left: 50%;
     top: 50%;
 }
 
+.ahover:hover {
+    text-decoration: underline;
+}
+
+.ihover:hover {
+    border: 1px dotted black;
+}
+
+.no-appearance {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    outline-style: none;
+    border-radius: 0px;
+}
+
+.small-button {
+    outline-style: inset;
+    outline-width: 1px;
+}
+
+/*-----Body-----*/
+body>* {
+    position: relative;
+}
+
+/*-----Header-----*/
 header {
     grid-area: hd;
 }
@@ -44,6 +79,7 @@ header {
     margin: -43px 0 0 -535px;
 }
 
+/*-----Navigation-----*/
 nav {
     grid-area: nv;
     border-top: 2px solid black;
@@ -59,15 +95,12 @@ nav {
     margin: -11.5px 0 0 -36px;
 }
 
-nav a:hover {
-    text-decoration: underline;
-}
-
+/*-----Main-----*/
 main {
     grid-area: mn;
 }
 
-.container {
+.main-container {
     width: 100%;
     height: 100%;
     background: white;
@@ -82,6 +115,7 @@ main {
         "   re  "
 }
 
+/*-----Search Query Area-----*/
 #search-box {
     position: relative;
     grid-area: sr;
@@ -94,15 +128,6 @@ main {
 
 .query-box>* {
     position: absolute;
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 0px;
-    background: white;
-    outline-style: none;
-    -moz-appearance: none;
-    -webkit-appearance: none;
-    appearance: none;
     font-size: 50px;
     font-weight: bold;
     font-style: italic;
@@ -113,7 +138,7 @@ main {
 }
 
 #select-box>select {
-    background: url(../image/selection-icon-2.svg) no-repeat 95% 50%;
+    background: url(../image/selection-icon.svg) no-repeat 95% 50%;
     cursor: pointer;
 }
 
@@ -124,7 +149,7 @@ main {
 }
 
 #word-box>input {
-    width: 100%;
+    cursor: text;
 }
 
 #submit-box {
@@ -132,10 +157,7 @@ main {
     left: 85%;
 }
 
-#submit-box>input {
-    cursor: pointer;
-}
-
+/*-----Result Table Area-----*/
 #result-box {
     grid-area: re;
     width: 100%;
@@ -162,13 +184,10 @@ th:last-child, td:last-child {
 td input {
     width: calc(50% - 6px);
     height: calc(50% - 6px);
-    outline-style: inset;
-    outline-width: 1px;
-    background: white;
-    color: black;
     margin: 3px;
 }
 
+/*-----Footer-----*/
 footer {
     grid-area: ft;
     border-top: 3px solid black;
@@ -179,17 +198,59 @@ footer {
 
 #mypage-container {
     grid-template-rows: 60px 20px 1fr;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px 20px 1fr;
     grid-template-areas: 
-        "   ti  ti  "
-        "   .   .   "
-        "   as  ar  "
+        "   ti  ti  ti  "
+        "   .   .   .   "
+        "   as  .   ar  "
 }
 
-#title-box {
+#container-title-box {
     grid-area: ti;
     text-align: center;
     font-size: 50px;
     font-weight: bold;
     font-style: italic;
+}
+
+#menu-box {
+    grid-area: as;
+    border-right: 3px solid black;
+}
+
+#menu-box>* {
+    cursor: pointer;
+    display: block;
+}
+
+#article-box {
+    grid-area: ar;
+}
+
+.selected {
+    color: red;
+}
+
+#article-content-box {
+    margin-top: 20px;
+    padding: 10px;
+    border: 2px solid black;
+}
+
+#article-content-box * {
+    margin-top: 5px;
+}
+
+.info-input {
+    border: 1px solid black;
+    cursor: text;
+}
+
+#content-submit {
+    cursor: pointer;
+}
+
+#article-title-box {
+    font-size: 25px;
+    font-weight: normal;
 }

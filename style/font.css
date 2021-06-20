@@ -6,10 +6,3 @@
       url("fonts/GothicA1.woff") format("woff"),
       url("fonts/GothicA1.ttf") format("truetype");
 }
-@font-face{
-  font-family:"NTR";
-  src:url("fonts/times.eot");
-  src:url("fonts/times.eot?#iefix") format("embedded-opentype"),
-      url("fonts/times.woff") format("woff"),
-      url("fonts/times.ttf") format("truetype");
-}
