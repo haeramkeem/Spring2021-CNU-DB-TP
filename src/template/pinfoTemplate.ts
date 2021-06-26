@@ -1,6 +1,7 @@
 import * as d from '../module/dateModule';
+import * as notice from '../module/alertModule';
 
-function getPinfoTemplate(id: string, name: string, today: Date) {
+function getPinfoTemplate(id: string, name: string, today: Date, msg: string | undefined) {
     return `
         <!DOCTYPE html>
         <html lang="en">
@@ -59,9 +60,10 @@ function getPinfoTemplate(id: string, name: string, today: Date) {
                 </div>
             </main>
             <footer>copyright©saltwalks2021</footer>
+            ${notice.alert(msg)}
         </body>
         </html>
-    `
+    `;
 }
 
 export default getPinfoTemplate;

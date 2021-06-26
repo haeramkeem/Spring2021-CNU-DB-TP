@@ -1,26 +1,26 @@
 import * as d from '../module/dateModule';
+import * as notice from '../module/alertModule'
 
 const blankRow = `<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
 
-function getSearchTemplate(resultRows: unknown[], today: Date) {
+function getSearchTemplate(resultRows: unknown[], today: Date, msg: string | undefined) {
     let buffer = ``;
     for(let oneRow of resultRows) {
-        let isbn, title, publisher, year, author, exttimes, daterented, datedue = resultRows;
         if(oneRow instanceof Array) {
+            let [isbn, title, publisher, year, author] = oneRow;
             buffer += `<tr>
-                <td>${oneRow[0]}</td>
-                <td>${oneRow[1]}</td>
-                <td>${oneRow[2]}</td>
-                <td>${oneRow[3]}</td>
-                <td>${oneRow[4]}</td>
+                <td>${isbn}</td>
+                <td>${title}</td>
+                <td>${publisher}</td>
+                <td>${year}</td>
+                <td>${author}</td>
                 <td>
                     <form action="/rent" method="POST">
-                        <input type="hidden" name="isbn" value="${oneRow[0]}">
+                        <input type="hidden" name="isbn" value="${isbn}">
                         <input class="small-button" type="submit" value="대여">
                     </form>
                     <form action="/reserve" method="POST">
-                        <input type="hidden" name="isbn" value="${oneRow[0]}">
-                        <input type="hidden" name="id" value="${oneRow[5]}">
+                        <input type="hidden" name="isbn" value="${isbn}">
                         <input class="small-button" type="submit" value="예약">
                     </form>
                 </td>
@@ -92,6 +92,7 @@ function getSearchTemplate(resultRows: unknown[], today: Date) {
                 </div>
             </main>
             <footer>copyright©saltwalks2021</footer>
+            ${notice.alert(msg)}
         </body>
         </html>
     `;

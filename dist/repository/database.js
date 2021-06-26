@@ -58,7 +58,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteOneReservation = exports.createPreviousRental = exports.createReservation = exports.createCustomer = exports.updateToReturned = exports.updateDateDue = exports.updatePinfo = exports.updateToRented = exports.selectStat3 = exports.selectStat2 = exports.selectStat1 = exports.selectReservedBookByIsbn = exports.selectCustomerByEmail = exports.selectEmailToSendByIsbn = exports.selectAllExpBooks = exports.selectReservedBookById = exports.selectRentedBookById = exports.selectBookRentalInfoByIsbn = exports.selectBookByWhere = exports.selectBookByAuthor = exports.selectCustomerById = exports.selectBookByOneColumn = exports.selectAllBook = exports.selectCustomerByIdPw = void 0;
+exports.deleteAllUnreservedBooks = exports.deleteOneReservation = exports.createPreviousRental = exports.createReservation = exports.createCustomer = exports.updateToReturned = exports.updateDateDue = exports.updatePinfo = exports.updateToRented = exports.selectStat3 = exports.selectStat2 = exports.selectStat1 = exports.selectReservedBooksNotRented = exports.selectCustomerByEmail = exports.selectNextCustomerByIsbn = exports.selectAllExpBooks = exports.selectReservedBookById = exports.selectRentedBookById = exports.selectRentedBookByIsbn = exports.selectBookByWhere = exports.selectBookByAuthor = exports.selectBookByOneColumn = exports.selectAllBook = exports.selectCustomerByIdEmail = exports.selectCustomerByIdPw = void 0;
 var oracledb_1 = __importDefault(require("oracledb"));
 var dbconfig = __importStar(require("./dbconfig"));
 var classDomain_1 = require("../domain/classDomain");
@@ -81,6 +81,9 @@ function execQuery(query) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             return [2 /*return*/, new Promise(function (resolve, reject) {
+                    if (typeof connectedDatabase === "undefined") {
+                        console.error("[Status] : Database Connection Lost");
+                    }
                     connectedDatabase.execute(query, [], function (err, res) {
                         //입력받은 SQL 실행
                         if (err) {
@@ -95,28 +98,29 @@ function execQuery(query) {
                             }
                             else {
                                 //변경 성공
-                                resolve(new classDomain_1.DBForm(3, [[]], res.rowsAffected));
+                                resolve(new classDomain_1.DBForm(dbconfig.DB_CHANGED, [], res.rowsAffected));
                             }
                         }
                         else if (res.rows.length === 0) {
                             //조회된 결과 없을 때
-                            resolve(new classDomain_1.DBForm(1, [[]], 0));
+                            resolve(new classDomain_1.DBForm(dbconfig.SELECT_NOTHING, [], 0));
                         }
                         else {
                             //조회된 결과 있을 때
-                            resolve(new classDomain_1.DBForm(0, res.rows, 0));
+                            resolve(new classDomain_1.DBForm(dbconfig.SELECT_SOMETHING, res.rows, 0));
                         }
                     });
                 }).catch(function (dbErr) {
                     //실행 실패 문구 + 결과 반환
                     console.error(dbErr);
-                    return new classDomain_1.DBForm(2, [[]], 0);
+                    return new classDomain_1.DBForm(dbconfig.DB_ERROR, [], 0);
                 })];
         });
     });
 }
 /* -------------------------------- LOCAL FUNCTIONS -------------------------------- */
 /* -------------------------------- SELECT -------------------------------- */
+//sign process
 function selectCustomerByIdPw(id, pw) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -125,10 +129,19 @@ function selectCustomerByIdPw(id, pw) {
     });
 }
 exports.selectCustomerByIdPw = selectCustomerByIdPw;
+function selectCustomerByIdEmail(id, email) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2 /*return*/, execQuery("\n        SELECT * \n        FROM customer \n        WHERE cno LIKE '" + id + "' AND email LIKE '" + email + "'")];
+        });
+    });
+}
+exports.selectCustomerByIdEmail = selectCustomerByIdEmail;
+//search books
 function selectAllBook() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author), e.cno\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        GROUP BY e.isbn, e.title, e.publisher, e.year, e.cno ")];
+            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author)\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        GROUP BY e.isbn, e.title, e.publisher, e.year")];
         });
     });
 }
@@ -136,23 +149,15 @@ exports.selectAllBook = selectAllBook;
 function selectBookByOneColumn(column, value) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author), e.cno\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE e." + column + " LIKE '" + value + "' \n        GROUP BY e.isbn, e.title, e.publisher, e.year, e.cno")];
+            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author)\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE e." + column + " LIKE '" + value + "' \n        GROUP BY e.isbn, e.title, e.publisher, e.year")];
         });
     });
 }
 exports.selectBookByOneColumn = selectBookByOneColumn;
-function selectCustomerById(id) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT * \n        FROM customer \n        WHERE cno LIKE '" + id + "'")];
-        });
-    });
-}
-exports.selectCustomerById = selectCustomerById;
 function selectBookByAuthor(author) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, a.author, e.cno\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE a.author LIKE '" + author + "'")];
+            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, a.author\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE a.author LIKE '" + author + "'")];
         });
     });
 }
@@ -160,19 +165,20 @@ exports.selectBookByAuthor = selectBookByAuthor;
 function selectBookByWhere(searchQuery) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author), e.cno\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE " + searchQuery + "\n        GROUP BY e.isbn, e.title, e.publisher, e.year, e.datedue, e.cno")];
+            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author)\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE " + searchQuery + "\n        GROUP BY e.isbn, e.title, e.publisher, e.year, e.datedue")];
         });
     });
 }
 exports.selectBookByWhere = selectBookByWhere;
-function selectBookRentalInfoByIsbn(isbn) {
+//
+function selectRentedBookByIsbn(isbn) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT cno, exttimes, daterented, datedue\n        FROM ebook \n        WHERE isbn LIKE '" + isbn + "'")];
+            return [2 /*return*/, execQuery("\n        SELECT cno, exttimes, daterented, datedue\n        FROM ebook \n        WHERE isbn LIKE '" + isbn + "'\n        AND cno IS NOT NULL\n        AND exttimes IS NOT NULL\n        AND daterented IS NOT NULL\n        AND datedue IS NOT NULL ")];
         });
     });
 }
-exports.selectBookRentalInfoByIsbn = selectBookRentalInfoByIsbn;
+exports.selectRentedBookByIsbn = selectRentedBookByIsbn;
 function selectRentedBookById(id) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -189,22 +195,23 @@ function selectReservedBookById(id) {
     });
 }
 exports.selectReservedBookById = selectReservedBookById;
+//
 function selectAllExpBooks() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT isbn, title\n        FROM ebook\n        WHERE ebook.datedue < SYSDATE")];
+            return [2 /*return*/, execQuery("\n        SELECT isbn, title\n        FROM ebook\n        WHERE TRUNC(ebook.datedue, 'dd') + 1 < SYSDATE")];
         });
     });
 }
 exports.selectAllExpBooks = selectAllExpBooks;
-function selectEmailToSendByIsbn(isbn) {
+function selectNextCustomerByIsbn(isbn) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT c.email \n        FROM reservation r JOIN customer c \n        ON r.cno = c.cno \n        WHERE r.reservationtime = (\n        SELECT MIN(r1.reservationtime) \n        FROM reservation r1 \n        GROUP BY r1.isbn \n        HAVING r1.isbn LIKE '" + isbn + "') \n        AND r.isbn LIKE '" + isbn + "'")];
+            return [2 /*return*/, execQuery("\n        SELECT c.email, c.cno\n        FROM reservation r JOIN customer c \n        ON r.cno = c.cno \n        WHERE r.reservationtime = (\n        SELECT MIN(r1.reservationtime) \n        FROM reservation r1 \n        GROUP BY r1.isbn \n        HAVING r1.isbn LIKE '" + isbn + "') \n        AND r.isbn LIKE '" + isbn + "'")];
         });
     });
 }
-exports.selectEmailToSendByIsbn = selectEmailToSendByIsbn;
+exports.selectNextCustomerByIsbn = selectNextCustomerByIsbn;
 function selectCustomerByEmail(email) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -213,14 +220,14 @@ function selectCustomerByEmail(email) {
     });
 }
 exports.selectCustomerByEmail = selectCustomerByEmail;
-function selectReservedBookByIsbn(isbn) {
+function selectReservedBooksNotRented() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT *\n        FROM reservation\n        WHERE isbn LIKE '" + isbn + "'")];
+            return [2 /*return*/, execQuery("\n        SELECT p.isbn, e.title\n        FROM previousrental p JOIN ebook e\n        ON p.isbn = e.isbn\n        WHERE e.cno IS NULL\n        AND e.exttimes IS NULL\n        AND e.daterented IS NULL\n        AND e.datedue IS NULL\n        AND (p.isbn, p.datereturned) IN (\n        SELECT isbn, MAX(datereturned)\n        FROM previousrental\n        GROUP BY isbn\n        HAVING TRUNC(MAX(datereturned), 'dd') + 1 < SYSDATE)")];
         });
     });
 }
-exports.selectReservedBookByIsbn = selectReservedBookByIsbn;
+exports.selectReservedBooksNotRented = selectReservedBooksNotRented;
 function selectStat1() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -310,3 +317,11 @@ function deleteOneReservation(id, isbn) {
     });
 }
 exports.deleteOneReservation = deleteOneReservation;
+function deleteAllUnreservedBooks() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2 /*return*/, execQuery("\n        DELETE FROM previousrental p JOIN ebook e\n        ON p.isbn = e.isbn\n        WHERE TRUNC(p.datereturned, 'dd') + 1 < SYSDATE\n        AND e.cno IS NULL\n        AND e.exttimes IS NULL\n        AND e.daterented IS NULL\n        AND e.datedue IS NULL")];
+        });
+    });
+}
+exports.deleteAllUnreservedBooks = deleteAllUnreservedBooks;

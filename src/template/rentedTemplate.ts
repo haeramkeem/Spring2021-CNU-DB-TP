@@ -1,8 +1,9 @@
 import * as d from '../module/dateModule';
+import * as notice from '../module/alertModule';
 
 const BLANK_ROW = `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
 
-function getRentedTemplate(id: string, name: string, resultRows: unknown[], today: Date) {
+function getRentedTemplate(id: string, name: string, resultRows: unknown[], today: Date, msg: string | undefined) {
     let buffer = ``;
     for(let oneRow of resultRows) {
         if(oneRow instanceof Array) {
@@ -94,6 +95,7 @@ function getRentedTemplate(id: string, name: string, resultRows: unknown[], toda
                 </div>
             </main>
             <footer>copyright©saltwalks2021</footer>
+            ${notice.alert(msg)}
         </body>
         </html>
     `;

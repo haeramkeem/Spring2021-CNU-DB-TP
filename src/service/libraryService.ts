@@ -2,23 +2,26 @@ import * as fs from 'fs';
 import * as database from '../repository/database';
 import * as mailer from 'nodemailer';
 import {Customer, SearchForm, Responsable, DBForm} from '../domain/classDomain';
+import { SELECT_SOMETHING, SELECT_NOTHING, DB_CHANGED, DB_ERROR } from '../repository/dbconfig';
 import getSearchTemplate from '../template/searchTemplate';
 import getPinfoTemplate from '../template/pinfoTemplate';
 import getRentedTemplate from '../template/rentedTemplate';
 import getReservedTemplate from '../template/reservedTemplate';
 import getAdminTemplate from '../template/adminTemplates';
+import getSignTemplate from '../template/signTemplate';
+import getSignUpTemplate from '../template/signUpTemplate';
 
-const ROOTDIR = "C:\\Users\\Host\\Desktop\\Spring2021-CNU-database-termproject-main\\dist";
+const ROOT_DIR = __dirname.replace("\\service", "");
 const MAILER_SENDER = "haeram.kim1@gmail.com";
 const MAILER_PASS = "revell1998115";
-const RENTABLE = 0;
-const RENTED = 1;
-const DBERROR = 2;
-const SELECT_SOMETHING = 0;
-const SELECT_NOTHING = 1;
-const DB_CHANGED = 3;
 const ADMIN_ID = "201702004";
 const ADMIN_PW = "111111";
+
+const RESERVABLE = 0;
+const OVER_RESERVE = 1;
+const USER_RESERVED = 2;
+
+const ALL_BOOK = undefined;
 
 /* -------------------------------------- GLOBAL VARIABLES --------------------------------------  */
 
@@ -34,52 +37,46 @@ export async function doSignIn(customer: Customer) {
         //관리자인지 확인
         return loadAdminPage();
     }
-
     return new Promise<Responsable>((resolve, reject) => {
         database.selectCustomerByIdPw(customer.id, customer.pw).then(res => {
             //id와 pw로 일치하는 고객 조회
-            switch (res.status) {
-                case SELECT_SOMETHING :
-                    //로그인 성공
-                    let [id, _, name, email] = res.rows[0];
-                    if(typeof id === "number" && typeof name === "string" && typeof email === "string") {
-                        //현재 사용자 정보 등록
-                        logInSession = new Customer(String(id), "", name, email);
-                        //도서검색창 이동
-                        resolve(loadSearchPage());
-                    }
-                    break;
-                case SELECT_NOTHING :
-                    //로그인 실패
-                    resolve(loadFile("/index.html"));
-                    break;
-                default :
-                    //조회 실패
-                    reject(409);
+            if(res.status === DB_ERROR || res.status === DB_CHANGED) {
+                reject(409);
+                return;
+            } else if(res.status === SELECT_NOTHING) {
+                resolve(loadSignPage("Wrong ID or PW"));
+                return;
             }
+            //사용자 정보 입력
+            logInSession = new Customer(String(res.rows[0][0]), "", res.rows[0][2] as string, res.rows[0][3] as string);
+            //도서검색창 이동
+            resolve(loadSearchPage());
         });
-    }).catch(err => {
-        return errorHandler(err);
-    });
+    }).catch(err => errorHandler(err));
 }
 
 export async function doSignUp(customer: Customer) {
     return new Promise<Responsable>((resolve, reject) => {
-        database.selectCustomerById(customer.id).then(res => {
-            //id중복 조회
-            switch (res.status) {
-                case SELECT_SOMETHING :
-                    //중복
-                    resolve(loadFile("/page/signup.html"));
-                    break;
-                case SELECT_NOTHING :
-                    //새로운 사용자 등록
-                    resolve(signUp(customer.id, customer.pw, customer.name, customer.email));
-                    break;
-                default :
-                    //조회 실패
-                    reject(409);
+        let {id, pw, name, email} = customer;
+        if(id === "" || pw ==="" || name === "" || email === "") {
+            return resolve(loadSignUpPage("Please Enter All Informations"));
+        }
+        database.selectCustomerByIdEmail(id, email).then(res => {
+            //id, email중복 조회
+            if(res.status === DB_ERROR || res.status === DB_CHANGED) {
+                return reject(409);
+            } else if(res.status === SELECT_SOMETHING) {
+                return resolve(loadSignUpPage("ID or Email Already Exists"));
             }
+            //새로운 사용자 등록
+            database.createCustomer(id, pw, name, email).then(res => {
+                //db에 접속해 사용자를 생성
+                if(res.status === DB_CHANGED) {
+                    resolve(loadSignPage("Sign Up Success"));
+                } else {
+                    reject(409);
+                }
+            });
         });
     }).catch(err => errorHandler(err));
 }
@@ -107,10 +104,10 @@ export async function doSearchBook(query: SearchForm) {
         switch (res.status) {
             case SELECT_SOMETHING :
                 //조회 성공 - 반영해서 도서검색창 생성
-                return new Responsable(200, getSearchTemplate(res.rows, today));
+                return loadSearchPage(res.rows);
             case SELECT_NOTHING :
                 //조회된 도서 없음
-                return new Responsable(200, getSearchTemplate([], today));
+                return loadSearchPage([]);
             default :
                 //조회 실패
                 return errorHandler(409);
@@ -120,178 +117,143 @@ export async function doSearchBook(query: SearchForm) {
 
 export async function doRentBook(isbn: string) {
     return new Promise<Responsable>((resolve, reject) => {
-        checkBookRentable(isbn).then(checkResult => {
+        if(!(logInSession instanceof Customer)) {
+            return reject(401);
+        }
+        let signedId = logInSession.id;
+        database.selectRentedBookByIsbn(isbn).then(rentCheck => {
             //책이 대여중인지 확인
-            if(checkResult === RENTABLE) {
-                //대여중이 아님
-                if(logInSession instanceof Customer) {
-                    //로그인 했음
-                    let signedId = logInSession.id;
-                    database.selectRentedBookById(signedId).then(res => {
-                        //자신이 몇권 대여했는지 확인
-                        switch (res.status) {
-                            case SELECT_SOMETHING :
-                                //대여한 도서가 있음
-                                if(res.rows.length > 2) {
-                                    //대여 가능 횟수 초과
-                                    resolve(loadSearchPage());
-                                } else {
-                                    //대여 가능 횟수 이하 - 대여 진행
-                                    resolve(rentBook(signedId, isbn));
-                                }
-                                break;
-                            case SELECT_NOTHING :
-                                //대여 기록 없음 - 대여 진행
-                                resolve(rentBook(signedId, isbn));
-                                break;
-                            default :
-                                //조회 실패
-                                reject(409);
+            if(rentCheck.status === DB_ERROR || rentCheck.status === DB_CHANGED) {
+                return reject(409);
+            } else if(rentCheck.status === SELECT_SOMETHING) {
+                return resolve(loadSearchPage(ALL_BOOK, "Can\'t Rent : Already Rented By Someone"));
+            }
+            database.selectRentedBookById(signedId).then(res => {
+                //자신이 몇권 대여했는지 확인
+                if(res.status === DB_ERROR || res.status === DB_CHANGED) {
+                    return reject(409);
+                } else if(res.rows.length > 2) {
+                    return resolve(loadSearchPage(ALL_BOOK, "Can\'t Rent : You Already Rented 3 Books"));
+                }
+                database.selectNextCustomerByIsbn(isbn).then(next => {
+                    if(next.status === DB_ERROR || next.status === DB_CHANGED) {
+                        return reject(409);
+                    } else if(next.status === SELECT_SOMETHING) {
+                        if(String(next.rows[0][1]) !== signedId) {
+                            return resolve(loadSearchPage(ALL_BOOK, "Can\'t Rent : Reserved By Someone"));
+                        } else {
+                            database.deleteOneReservation(signedId, isbn);
+                        }
+                    }
+                    database.updateToRented(signedId, isbn).then(res => {
+                        //대여 진행
+                        if(res.status === DB_CHANGED) {
+                            resolve(loadSearchPage(ALL_BOOK, "Rent Success"));
+                        } else {
+                            reject(409);
                         }
                     });
-                } else {
-                    //로그아웃됨
-                    reject(401);
-                }
-            } else if(checkResult === RENTED) {
-                //대여중 - 대여 불가능
-                resolve(loadSearchPage());
-            } else {
-                //확인 실패
-                reject(409);
-            }
+                });
+            });
         });
     }).catch(err => errorHandler(err));
 }
 
-export async function doReserveBook(isbn: string, rentedBy: string) {
+export async function doReserveBook(isbn: string) {
     return new Promise<Responsable>((resolve, reject) => {
-        checkBookRentable(isbn).then(checkResult => {
-            //대여중 확인
-            if(checkResult === RENTABLE) {
-                //대여 가능 - 예약 불가능
-                resolve(loadSearchPage());
-            } else if(checkResult === RENTED) {
-                //대여중
-                if(logInSession instanceof Customer) {
-                    //로그인 확인
-                    let signedId = logInSession.id;
-                    if(rentedBy === signedId) {
-                        //자신이 대여했음
-                        resolve(loadSearchPage());
-                    } else {
-                        database.selectReservedBookById(signedId).then(res => {
-                            //예약 기록 확인
-                            switch (res.status) {
-                                case SELECT_SOMETHING :
-                                    //예약 기록 존재
-                                    if(res.rows.length > 2) {
-                                        //예약 가능 횟수 초과
-                                        resolve(loadSearchPage());
-                                    } else if(checkAlreadyReserved(res.rows, isbn)) {
-                                        //이미 예약한 도서
-                                        resolve(loadSearchPage());
-                                    } else {
-                                        //예약 가능
-                                        resolve(reserveBook(isbn, signedId));
-                                    }
-                                    break;
-                                case SELECT_NOTHING :
-                                    //예약 기록 없음 - 예약 가능
-                                    resolve(reserveBook(isbn, signedId));
-                                    break;
-                                default :
-                                    //예약 기록 조회 실패
-                                    reject(409);
-                            }
-                        });
-                    }
-                } else {
-                    //로그아웃됨
-                    reject(401);
-                }
-            } else {
-                //대여가능 확인 실패
+        if(!(logInSession instanceof Customer)) {
+            reject(401);
+            return;
+        }
+        let signedId = logInSession.id;
+        database.selectRentedBookByIsbn(isbn).then(rentCheck => {
+            if(rentCheck.status === DB_ERROR || rentCheck.status === DB_CHANGED) {
                 reject(409);
+                return;
+            } else if(rentCheck.status === SELECT_NOTHING) {
+                resolve(loadSearchPage(ALL_BOOK, "Can\'t Reserve : You Can Rent"));
+                return;
+            } else if(String(rentCheck.rows[0][0]) === signedId) {
+                resolve(loadSearchPage(ALL_BOOK, "Can\'t Reserve : You Already Rent"));
+                return;
             }
+            checkUserReservable(signedId, isbn).then(userCheck => {
+                if(userCheck === DB_ERROR) {
+                    reject(409);
+                    return;
+                } else if(userCheck === OVER_RESERVE) {
+                    resolve(loadSearchPage(ALL_BOOK, "Can\'t Reserve : You Reserved 3 Books"));
+                    return;
+                } else if(userCheck === USER_RESERVED) {
+                    resolve(loadSearchPage(ALL_BOOK, "Can\'t Reserve : You Already Reserved"));
+                    return;
+                }
+                database.createReservation(signedId, isbn).then(res => {
+                    //예약 기록 생성
+                    if(res.status === DB_CHANGED) {
+                        resolve(loadSearchPage(ALL_BOOK, "Reserve Success"));
+                    } else {
+                        reject(409);
+                    }
+                });
+            });
         });
     }).catch(err => errorHandler(err));
 }
 
 export async function doModifyPinfo(pw: string, email: string) {
     return new Promise<Responsable>((resolve, reject) => {
-        if(logInSession instanceof Customer) {
+        if(!(logInSession instanceof Customer)) {
             //로그인 확인
-            let [signedId, signedName] = [logInSession.id, logInSession.name];
-            database.selectCustomerByEmail(email).then(res => {
-                //이메일 중복 확인
-                switch (res.status) {
-                    case SELECT_SOMETHING :
-                        //이메일 중복
-                        resolve(new Responsable(200, getPinfoTemplate(signedId, signedName, today)));
-                        break;
-                    case SELECT_NOTHING :
-                        //중복되지 않음 - 변경
-                        resolve(modifyPinfo(signedId, pw, email, signedName));
-                        break;
-                    default :
-                        //중복 확인 실패
-                        reject(409);
+            return reject(401);
+        }
+        let signedId = logInSession.id;
+        if(pw === "" || email === "") {
+            return resolve(loadPinfoPage("Please Enter All Information"));
+        }
+        database.selectCustomerByEmail(email).then(res => {
+            //이메일 중복 확인
+            if(res.status === DB_ERROR || res.status === DB_CHANGED) {
+                return reject(409);
+            } else if(res.status === SELECT_SOMETHING) {
+                return resolve(loadPinfoPage("Email Already Used"));
+            }
+            database.updatePinfo(signedId, pw, email).then(res => {
+                //개인정보 수정
+                if(res.status === DB_CHANGED) {
+                    resolve(loadPinfoPage("Modify Personal Information Success"));
+                } else {
+                    reject(409);
                 }
             });
-        } else {
-            //로그아웃됨
-            reject(401);
-        }
+        });
     }).catch(err => errorHandler(err));
 }
 
 export async function doExtendDue(isbn: string, exttimes: string) {
-    console.log(exttimes);
-    
     return new Promise<Responsable>((resolve, reject) => {
-        if(logInSession instanceof Customer) {
+        if(!(logInSession instanceof Customer)) {
             //로그인 확인
-            if(Number(exttimes) < 2) {
-                //연장횟수 조회
-                database.selectReservedBookByIsbn(isbn).then(res => {
-                    //해당 도서 예약 기록 조회
-                    switch (res.status) {
-                        case SELECT_SOMETHING :
-                            //예약 기록 존재 - 연장 기각
-                            console.log(1);
-                            
-                            resolve(loadRentedPage());
-                            break;
-                        case SELECT_NOTHING :
-                            //예약 기록 없음
-                            database.updateDateDue(isbn).then(res => {
-                                //연장 진행
-                                switch (res.status) {
-                                    case DB_CHANGED :
-                                        //연장 성공 - 반영된 결과 응답
-                                        resolve(loadRentedPage());
-                                        break;
-                                    default :
-                                        //연장 실패
-                                        reject(409);
-                                }
-                            });
-                            break;
-                        default :
-                            //예약 기록 확인 실패
-                            reject(409);
-                    }
-                });
-            } else {
-                //연장 횟수 초과 - 기각
-                console.log(2);
-                resolve(loadRentedPage());
-            }
-        } else {
-            //로그아웃됨
-            reject(401);
+            return reject(401);
+        } else if(Number(exttimes) >= 2) {
+            //연장횟수 조회
+            return resolve(loadRentedPage("Can\'t Extend : Already Extend Twice"))
         }
+        database.selectNextCustomerByIsbn(isbn).then(next => {
+            if(next.status === DB_ERROR || next.status === DB_CHANGED) {
+                return reject(409);
+            } else if(next.status === SELECT_SOMETHING) {
+                return resolve(loadRentedPage("Can\' Extend : Reserved By Someone"));
+            }
+            database.updateDateDue(isbn).then(res => {
+                //연장 진행
+                if(res.status === DB_CHANGED) {
+                    resolve(loadRentedPage("Extend Sucess"));
+                } else {
+                    reject(409);
+                }
+            });
+        });
     }).catch(err => errorHandler(err));
 }
 
@@ -301,7 +263,7 @@ export async function doReturnBook(isbn: string, title: string) {
             //반납 진행
             if(returnedNormally) {
                 //반납 성공 - 반영된 대여도서 검색창 응답
-                resolve(loadRentedPage());
+                resolve(loadRentedPage("Returned Successfully"));
             } else {
                 //반납 실패
                 reject(409);
@@ -320,7 +282,7 @@ export async function doCancelReservation(isbn: string) {
                 switch (res.status) {
                     case DB_CHANGED :
                         //취소 완료
-                        resolve(loadReservedPage());
+                        resolve(loadReservedPage("Canceling Reservation Success"));
                         break;
                     default :
                         //취소 실패
@@ -335,10 +297,14 @@ export async function doCancelReservation(isbn: string) {
 }
 
 /* -------------------------------------- GET - load --------------------------------------  */
-export function loadSignPage() {
+export function loadSignPage(msg?: string) {
     //로그아웃
     logInSession = null;
-    return loadFile("/index.html");
+    return new Responsable(200, getSignTemplate(msg));
+}
+
+export function loadSignUpPage(msg?: string) {
+    return new Responsable(200, getSignUpTemplate(msg))
 }
 
 export async function loadAdminPage() {
@@ -362,40 +328,41 @@ export async function loadAdminPage() {
     }).catch(err => errorHandler(err));
 }
 
-export async function loadSearchPage() {
+export async function loadSearchPage(books?: unknown[], msg?: string) {
     return new Promise<Responsable>((resolve, reject) => {
-        database.selectAllBook().then(res => {
-            //모든 도서 조회
-            switch (res.status) {
-                case SELECT_SOMETHING :
-                    //조회된 도서 반영하여 응답
-                    resolve(new Responsable(200, getSearchTemplate(res.rows, today)));
-                    break;
-                case SELECT_NOTHING :
-                    //도서 없음
-                    resolve(new Responsable(200, getSearchTemplate([], today)));
-                    break;
-                default :
-                    //조회 실패
-                    reject(409);
-            }
-        });
+        if(typeof books === "undefined") {
+            database.selectAllBook().then(res => {
+                //모든 도서 조회
+                switch (res.status) {
+                    case SELECT_SOMETHING :
+                    case SELECT_NOTHING :
+                        //조회된 도서 반영하여 응답
+                        resolve(new Responsable(200, getSearchTemplate(res.rows, today, msg)));
+                        break;
+                    default :
+                        //조회 실패
+                        reject(409);
+                }
+            });
+        } else {
+            resolve(new Responsable(200, getSearchTemplate(books, today, msg)));
+        }
     }).catch(err => errorHandler(err));
 }
 
-export function loadPinfoPage() {
+export function loadPinfoPage(msg?: string) {
     if(logInSession instanceof Customer) {
         //로그인 확인
         let [signedId, signedName] = [logInSession.id, logInSession.name];
         //고객정보 변결창 응답
-        return new Responsable(200, getPinfoTemplate(signedId, signedName, today));
+        return new Responsable(200, getPinfoTemplate(signedId, signedName, today, msg));
     } else {
         //로그아웃됨
         return new Responsable(401, "401 : Unauthorized");
     }
 }
 
-export async function loadRentedPage() {
+export async function loadRentedPage(msg?: string) {
     return new Promise<Responsable>((resolve, reject) => {
         if(logInSession instanceof Customer) {
             //로그인 확인
@@ -405,11 +372,11 @@ export async function loadRentedPage() {
                 switch (res.status) {
                     case SELECT_SOMETHING :
                         //대여 도서 존재 - 반영하여 응답
-                        resolve(new Responsable(200, getRentedTemplate(signedId, signedName, res.rows, today)));
+                        resolve(new Responsable(200, getRentedTemplate(signedId, signedName, res.rows, today, msg)));
                         break;
                     case SELECT_NOTHING :
                         //대여 도서 존재하지 않음 - 없음으로 반영
-                        resolve(new Responsable(200, getRentedTemplate(signedId, signedName, [], today)));
+                        resolve(new Responsable(200, getRentedTemplate(signedId, signedName, [], today, msg)));
                         break;
                     default :
                         //조회 실패
@@ -423,7 +390,7 @@ export async function loadRentedPage() {
     }).catch(err => errorHandler(err));
 }
 
-export async function loadReservedPage() {
+export async function loadReservedPage(msg?: string) {
     return new Promise<Responsable>((resolve, reject) => {
         if(logInSession instanceof Customer) {
             //로그인 확인
@@ -433,11 +400,11 @@ export async function loadReservedPage() {
                 switch (res.status) {
                     case SELECT_SOMETHING :
                         //예약 도서 존재 - 반영하여 응답
-                        resolve(new Responsable(200, getReservedTemplate(signedId, signedName, res.rows, today)));
+                        resolve(new Responsable(200, getReservedTemplate(signedId, signedName, res.rows, today, msg)));
                         break;
                     case SELECT_NOTHING :
                         //존재하지 않음 - 반영하여 응답
-                        resolve(new Responsable(200, getReservedTemplate(signedId, signedName, [], today)));
+                        resolve(new Responsable(200, getReservedTemplate(signedId, signedName, [], today, msg)));
                         break;
                     default :
                         //조회 실패
@@ -454,7 +421,7 @@ export async function loadReservedPage() {
 export function loadFile(filePath: string) {
     try {
         //파일 읽기 시도
-        return new Responsable(200, fs.readFileSync(ROOTDIR + filePath));
+        return new Responsable(200, fs.readFileSync(ROOT_DIR + filePath));
     } catch (error) {
         console.error(error);
         //파일 열기 실패
@@ -465,208 +432,103 @@ export function loadFile(filePath: string) {
 /* ------------------------------- INITIAL FUNCTIONS ------------------------------- */
 
 export async function refreshDB() {
-    return new Promise<boolean>((resolve, reject) => {
+    return new Promise<void>(() => {
         if(date !== today.getDate()) {
             //날짜 변경
             date = today.getDate();
             //변경된 날짜 반영
-            database.selectAllExpBooks().then(res => {
-                //만료된 도서 조회
-                switch (res.status) {
-                    case SELECT_SOMETHING :
-                        //만료 도서 존재
-                        for(let book of res.rows) {
-                            //모두 반납
-                            returnBook(String(book[0]), book[1] as string);
-                        }
-                        resolve(true);
-                        break;
-                    case SELECT_NOTHING :
-                        //만료 도서 없음
-                        resolve(true);
-                        break;
-                    default :
-                        //조회 실패
-                        reject(`[${today.getTime()}] : DB Refresh Failure`);
-                }
-            });
-        } else {
-            //날짜 변경되지 않음
-            resolve(true);
+            returnExpiredBooks();
+            cancelUnrentedReservation();
         }
-    }).catch(reason => {
-        console.error(reason);
-        return false;
     });
 }
 
-/* ------------------------------- LOCAL FUNCTIONS ------------------------------- */
-
-async function signUp(id: string, pw: string, name: string, email: string) {
-    return new Promise<Responsable>((resolve, reject) => {
-        database.createCustomer(id, pw, name, email).then(res => {
-            //db에 접속해 사용자를 생성
-            switch (res.status) {
-                case DB_CHANGED :
-                    resolve(loadFile("/index.html")); //성공
-                    break;
-                default :
-                    reject(409); //실패
+async function returnExpiredBooks() {
+    return new Promise<void>(() => {
+        database.selectAllExpBooks().then(res => {
+            //만료된 도서 조회
+            if(res.status === SELECT_SOMETHING) {
+                for(let book of res.rows) {
+                    //모두 반납
+                    returnBook(String(book[0]), book[1] as string);
+                }
             }
         });
-    }).catch(err => errorHandler(err));
+    });
 }
+
+async function cancelUnrentedReservation() {
+    return new Promise<void>(() => {
+        database.selectReservedBooksNotRented().then(selectedBooks => {
+            if(selectedBooks.status === SELECT_SOMETHING) {
+                for(let book of selectedBooks.rows) {
+                    let isbn = book[0] as string;
+                    let title = book[1] as string;
+                    database.selectNextCustomerByIsbn(isbn).then(selectedCustomer => {
+                        if(selectedCustomer.status === SELECT_SOMETHING) {
+                            let email = selectedCustomer.rows[0][0] as string;
+                            let id = String(selectedCustomer.rows[0][1]);
+                            database.deleteOneReservation(id, isbn);
+                            sendEmail(email, title);
+                        }
+                    })
+                }  
+            }
+        });
+    })
+}
+
+/* ------------------------------- LOCAL FUNCTIONS ------------------------------- */
 
 async function returnBook(isbn: string, title: string) {
     return new Promise<boolean>(resolve => {
         database.createPreviousRental(isbn).then(creationResult => {
             //이전 대여기록의 인스턴스 생성
-            switch (creationResult.status) {
-                case DB_CHANGED :
-                    //생성성공
-                    database.updateToReturned(isbn).then(updateResult => {
-                        //책 반납
-                        switch (updateResult.status) {
-                            case DB_CHANGED :
-                                //반납 성공
-                                getNextCustomer(isbn).then(email => {
-                                    //다음 순번 고객의 email 조회
-                                    switch (email) {
-                                        case "ERROR" :
-                                            //실패
-                                            resolve(false);
-                                            break;
-                                        case "NOTHING" :
-                                            //다음순번이 없음
-                                            resolve(true);
-                                            break;
-                                        default :
-                                            //다음순번에게 email전송
-                                            sendEmail(email, title).then(() => resolve(true));
-                                    }
-                                });
-                                break;
-                            default :
-                                //반납 실패
-                                resolve(false);
-                        }
-                    });
-                    break;
-                default :
-                    //생성실패
-                    resolve(false);
+            if(creationResult.status !== DB_CHANGED) {
+                return resolve(false);
             }
-        })
-    });
-}
-
-async function modifyPinfo(id: string, pw: string, email: string, name: string) {
-    return new Promise<Responsable>((resolve, reject) => {
-        database.updatePinfo(id, pw, email).then(res => {
-            //개인정보 수정
-            switch (res.status) {
-                case DB_CHANGED :
-                    //수정 성공
-                    resolve(new Responsable(200, getPinfoTemplate(id, name, today)));
-                    break;
-                default :
-                    //수정 실패
-                    reject(409);
-            }
-        });
-    }).catch(err => errorHandler(err));
-}
-
-async function checkBookRentable(isbn: string) {
-    return new Promise<number>(resolve => {
-        database.selectBookRentalInfoByIsbn(isbn).then(res => {
-            //도서 대여 정보 조회
-            switch (res.status) {
-                case SELECT_SOMETHING :
-                    //조회 성공
-                    if(res.rows[0][0] === null && res.rows[0][1] === null && res.rows[0][2] === null && res.rows[0][3] === null) {
-                        //대여되지 않음
-                        resolve(RENTABLE);
-                    } else if(res.rows[0][0] !== null && res.rows[0][1] !== null && res.rows[0][2] !== null && res.rows[0][3] !== null) {
-                        //대여됨
-                        resolve(RENTED);
+            //생성성공
+            database.updateToReturned(isbn).then(updateResult => {
+                //책 반납
+                if(updateResult.status !== DB_CHANGED) {
+                    return resolve(false)
+                }
+                //반납 성공
+                database.selectNextCustomerByIsbn(isbn).then(res => {
+                    //다음순번 이메일 조회
+                    if(res.status === SELECT_SOMETHING) {
+                        sendEmail(res.rows[0][0] as string, title).then(() => resolve(true));
+                    } else if(res.status === SELECT_NOTHING) {
+                        resolve(true);
                     } else {
-                        //DB이상
-                        resolve(DBERROR);
+                        resolve(false);
                     }
-                    break;
-                default :
-                    //조회 실패
-                    resolve(DBERROR);
-            }
-        });
+                });
+            });
+        })
     });
 }
 
-function checkAlreadyReserved(bookList: unknown[][], isbn: string): boolean {
-    //책 목록에서 책 하나씩 꺼내 isbn확인
-    for(let book of bookList) {
-        if(book[0] === isbn) {
-            return true;
-        }
-    }
-    return false;
-}
-
-async function reserveBook(isbn : string, id: string) {
-    return new Promise<Responsable>((resolve, reject) => {
-        database.createReservation(id, isbn).then(res => {
-            //예약 기록 생성
-            switch (res.status) {
-                case DB_CHANGED :
-                    //성공
-                    resolve(loadSearchPage());
-                    break;
-                default :
-                    //실패
-                    reject(409);
-            }
-        })
-    }).catch(err => errorHandler(err));
-}
-
-async function rentBook(id: string, isbn: string) {
-    return new Promise<Responsable> ((resolve, reject) => {
-        database.updateToRented(id, isbn).then(res => {
-            //대여 진행
-            switch (res.status) {
-                case DB_CHANGED :
-                    //성공
-                    resolve(loadSearchPage());
-                    break;
-                default :
-                    //실패
-                    reject(409);
+async function checkUserReservable(id: string, isbn: string) {
+    return new Promise<number>(resolve => {
+        database.selectReservedBookById(id).then(reserveCheck => {
+            if(reserveCheck.status === DB_ERROR || reserveCheck.status === DB_CHANGED) {
+                resolve(DB_ERROR);
+            } else if(reserveCheck.status === SELECT_NOTHING) {
+                resolve(RESERVABLE);
+            } else if(reserveCheck.rows.length > 2) {
+                resolve(OVER_RESERVE);
+            } else {
+                for(let book of reserveCheck.rows) {
+                    if(book[0] === isbn) {
+                        resolve(USER_RESERVED);
+                        return;
+                    }
+                }
+                resolve(RESERVABLE);
             }
         });
-    }).catch(err => errorHandler(err));
-}
-
-async function getNextCustomer(isbn: string) {
-    return new Promise<string>(resolve => {
-        database.selectEmailToSendByIsbn(isbn).then(res => {
-            //다음순번 이메일 조회
-            switch (res.status) {
-                case SELECT_SOMETHING :
-                    //다음 순번 존재
-                    let email = res.rows[0][0] as string;
-                    resolve(email);
-                    break;
-                case SELECT_NOTHING :
-                    //다음 순번 없음
-                    resolve("NOTHING");
-                    break;
-                default :
-                    //조회 실패
-                    resolve("ERROR");
-            }
-        });
-    })
+    });
 }
 
 async function sendEmail(email: string, bookTitle: string) {    
@@ -710,7 +572,7 @@ function errorHandler(err: number) {
     //에러 코드 응답
     switch (err) {
         case 401 :
-            return new Responsable(401, "401 : Unauthorized");
+            return loadSignPage("Log out");
         case 409 :
             return new Responsable(409, "409 : Conflict");
         default :
@@ -729,9 +591,9 @@ async function searchBookByQuery(query: string) {
             switch (res.status) {
                 case DB_CHANGED :
                     //조회 실패
-                    resolve(new DBForm(DBERROR, [[]], 0));
+                    resolve(new DBForm(DB_ERROR, [[]], 0));
                     break;
-                case DBERROR :
+                case DB_ERROR :
                     //잘못된 쿼리 입력
                     resolve(new DBForm(SELECT_NOTHING, [[]], 0));
                     break;
