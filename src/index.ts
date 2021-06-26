@@ -1,30 +1,10 @@
-import http from 'http';
-import queryString from 'querystring';
-import fs from 'fs';
+import * as http from 'http';
+import libraryController from './controller/libraryController';
 
-let app = http.createServer(function(request:http.IncomingMessage, response: http.ServerResponse){
-    let url = request.url;
-    if(url == '/'){
-      url = '/index.html';
-    }
-    if(request.method === 'POST') {
-      console.log("plz");
-      
-      let body = '';
-
-      request.on('data', function(data) {
-        body += data;
-      });
-
-      request.on('end', function() {
-        let post = queryString.parse(body);
-        console.log(post);
-        
-      });
-
-      url = '/page/search.html'
-    }
-    response.writeHead(200);
-    response.end(fs.readFileSync(__dirname + url));    
+let app = http.createServer((request:http.IncomingMessage, response: http.ServerResponse) => {
+    libraryController(request, response);
 });
+
+//서버를 생성하고 시작함
 app.listen(3000);
+console.log("[Status] : Server Started - localhost:3000");

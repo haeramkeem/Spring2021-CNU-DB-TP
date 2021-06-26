@@ -6,3 +6,20 @@
       url("fonts/GothicA1.woff") format("woff"),
       url("fonts/GothicA1.ttf") format("truetype");
 }
+
+@font-face{
+  font-family:"NYT";
+  src:url("fonts/Chomsky.eot");
+  src:url("fonts/Chomsky.eot?#iefix") format("embedded-opentype"),
+      url("fonts/Chomsky.woff") format("woff"),
+      url("fonts/Chomsky.ttf") format("truetype");
+}
+
+@font-face{
+  font-family:"NSKR";
+  src:url("fonts/NotoSerifKR.eot");
+  src:url("fonts/NotoSerifKR.eot?#iefix") format("embedded-opentype"),
+      url("fonts/NotoSerifKR.woff") format("woff"),
+      url("fonts/NotoSerifKR.ttf") format("truetype");
+  unicode-range: U+AC00-U+D7A3;
+}

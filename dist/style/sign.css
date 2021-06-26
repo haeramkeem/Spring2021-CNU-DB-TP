@@ -35,20 +35,15 @@ a {
 }
 
 .both-hand-side {
-    width: 550px;
-    height: 680px;
-    margin: -340px 0 0 -275px;
+    width: calc(100% - 120px);
+    height: calc(100% - 60px);
+    margin: 30px 60px 30px 60px;
+    background-color: #EADDCA;
 }
 
 header {
     grid-area: hd;
     border-right: 1px solid black;
-}
-
-#left-hand-side {
-    background-image: url(../image/sign-lhs-background.svg);
-    background-size: cover;
-    background-repeat: no-repeat;
 }
 
 #logo-box {
@@ -65,11 +60,6 @@ header {
 
 main {
     grid-area: mn;
-}
-
-#right-hand-side {
-    background-image: url(../image/sign-rhs-background.svg);
-    background-size: cover;
 }
 
 #sign-box {
