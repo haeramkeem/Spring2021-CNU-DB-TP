@@ -64,12 +64,8 @@ var database = __importStar(require("../repository/database"));
 var mailer = __importStar(require("nodemailer"));
 var classDomain_1 = require("../domain/classDomain");
 var dbconfig_1 = require("../repository/dbconfig");
+var dateModule_1 = require("../module/dateModule");
 var pug_1 = __importDefault(require("pug"));
-var searchTemplate_1 = __importDefault(require("../template/searchTemplate"));
-var pinfoTemplate_1 = __importDefault(require("../template/pinfoTemplate"));
-var rentedTemplate_1 = __importDefault(require("../template/rentedTemplate"));
-var reservedTemplate_1 = __importDefault(require("../template/reservedTemplate"));
-var adminTemplates_1 = __importDefault(require("../template/adminTemplates"));
 var ROOT_DIR = __dirname.replace("\\service", "");
 var MAILER_SENDER = "haeram.kim1@gmail.com";
 var MAILER_PASS = "revell1998115";
@@ -413,12 +409,12 @@ function loadSignPage(msg) {
     //로그아웃
     logInSession = null;
     var signPage = pug_1.default.compileFile(ROOT_DIR + "/view/signIn.pug");
-    return new classDomain_1.Responsable(200, signPage({ msg: msg }));
+    return new classDomain_1.Responsable(200, signPage({ alertMsg: msg }));
 }
 exports.loadSignPage = loadSignPage;
 function loadSignUpPage(msg) {
     var signUpPage = pug_1.default.compileFile(ROOT_DIR + "/view/signUp.pug");
-    return new classDomain_1.Responsable(200, signUpPage({ msg: msg }));
+    return new classDomain_1.Responsable(200, signUpPage({ alertMsg: msg }));
 }
 exports.loadSignUpPage = loadSignUpPage;
 function loadAdminPage() {
@@ -431,9 +427,17 @@ function loadAdminPage() {
                             //통계 2
                             getStat3().then(function (res3) {
                                 //통계 3
-                                if (res1 instanceof Array && res2 instanceof Array && res3 instanceof Array) {
+                                if (res1 instanceof Array && res1[0] instanceof Array && res2 instanceof Array && res3 instanceof Array) {
                                     //통계 결과 조회 성공
-                                    resolve(new classDomain_1.Responsable(200, adminTemplates_1.default(today, res1, res2, res3)));
+                                    var adminPage = pug_1.default.compileFile(ROOT_DIR + "/view/admin.pug");
+                                    var templateObj = {
+                                        date: dateModule_1.getFullDate(today),
+                                        alertMsg: "",
+                                        count: res1[0][0],
+                                        rents: res2,
+                                        ranks: res3,
+                                    };
+                                    resolve(new classDomain_1.Responsable(200, adminPage(templateObj)));
                                 }
                                 else {
                                     //실패
@@ -449,7 +453,9 @@ function loadAdminPage() {
 exports.loadAdminPage = loadAdminPage;
 function loadSearchPage(books, msg) {
     return __awaiter(this, void 0, void 0, function () {
+        var searchPage;
         return __generator(this, function (_a) {
+            searchPage = pug_1.default.compileFile(ROOT_DIR + "/view/searchBooks.pug");
             return [2 /*return*/, new Promise(function (resolve, reject) {
                     if (typeof books === "undefined") {
                         database.selectAllBook().then(function (res) {
@@ -458,7 +464,12 @@ function loadSearchPage(books, msg) {
                                 case dbconfig_1.SELECT_SOMETHING:
                                 case dbconfig_1.SELECT_NOTHING:
                                     //조회된 도서 반영하여 응답
-                                    resolve(new classDomain_1.Responsable(200, searchTemplate_1.default(res.rows, today, msg)));
+                                    var templateObj = {
+                                        date: dateModule_1.getFullDate(today),
+                                        booksToShow: res.rows,
+                                        alertMsg: msg,
+                                    };
+                                    resolve(new classDomain_1.Responsable(200, searchPage(templateObj)));
                                     break;
                                 default:
                                     //조회 실패
@@ -467,7 +478,12 @@ function loadSearchPage(books, msg) {
                         });
                     }
                     else {
-                        resolve(new classDomain_1.Responsable(200, searchTemplate_1.default(books, today, msg)));
+                        var templateObj = {
+                            date: dateModule_1.getFullDate(today),
+                            booksToShow: books,
+                            alertMeg: msg
+                        };
+                        resolve(new classDomain_1.Responsable(200, searchPage(templateObj)));
                     }
                 }).catch(function (err) { return errorHandler(err); })];
         });
@@ -477,9 +493,15 @@ exports.loadSearchPage = loadSearchPage;
 function loadPinfoPage(msg) {
     if (logInSession instanceof classDomain_1.Customer) {
         //로그인 확인
-        var _a = [logInSession.id, logInSession.name], signedId = _a[0], signedName = _a[1];
+        var pinfoPage = pug_1.default.compileFile(ROOT_DIR + "/view/pinfo.pug");
+        var templateObj = {
+            date: today,
+            id: logInSession.id,
+            name: logInSession.name,
+            alertMsg: msg,
+        };
         //고객정보 변결창 응답
-        return new classDomain_1.Responsable(200, pinfoTemplate_1.default(signedId, signedName, today, msg));
+        return new classDomain_1.Responsable(200, pinfoPage(templateObj));
     }
     else {
         //로그아웃됨
@@ -489,21 +511,31 @@ function loadPinfoPage(msg) {
 exports.loadPinfoPage = loadPinfoPage;
 function loadRentedPage(msg) {
     return __awaiter(this, void 0, void 0, function () {
+        var rentPage;
         return __generator(this, function (_a) {
+            rentPage = pug_1.default.compileFile(ROOT_DIR + "/view/rented.pug");
             return [2 /*return*/, new Promise(function (resolve, reject) {
                     if (logInSession instanceof classDomain_1.Customer) {
                         //로그인 확인
-                        var _a = [logInSession.id, logInSession.name], signedId_1 = _a[0], signedName_1 = _a[1];
-                        database.selectRentedBookById(signedId_1).then(function (res) {
+                        var templateObj_1 = {
+                            date: dateModule_1.getFullDate(today),
+                            alertMsg: msg,
+                            id: logInSession.id,
+                            name: logInSession.name,
+                            booksToShow: new Array(),
+                        };
+                        database.selectRentedBookById(logInSession.id).then(function (res) {
                             //대여 도서 조회
                             switch (res.status) {
                                 case dbconfig_1.SELECT_SOMETHING:
                                     //대여 도서 존재 - 반영하여 응답
-                                    resolve(new classDomain_1.Responsable(200, rentedTemplate_1.default(signedId_1, signedName_1, res.rows, today, msg)));
+                                    templateObj_1.booksToShow = res.rows;
+                                    resolve(new classDomain_1.Responsable(200, rentPage(templateObj_1)));
                                     break;
                                 case dbconfig_1.SELECT_NOTHING:
                                     //대여 도서 존재하지 않음 - 없음으로 반영
-                                    resolve(new classDomain_1.Responsable(200, rentedTemplate_1.default(signedId_1, signedName_1, [], today, msg)));
+                                    templateObj_1.booksToShow = [];
+                                    resolve(new classDomain_1.Responsable(200, rentPage(templateObj_1)));
                                     break;
                                 default:
                                     //조회 실패
@@ -522,21 +554,31 @@ function loadRentedPage(msg) {
 exports.loadRentedPage = loadRentedPage;
 function loadReservedPage(msg) {
     return __awaiter(this, void 0, void 0, function () {
+        var reservePage;
         return __generator(this, function (_a) {
+            reservePage = pug_1.default.compileFile(ROOT_DIR + "/view/reserved.pug");
             return [2 /*return*/, new Promise(function (resolve, reject) {
                     if (logInSession instanceof classDomain_1.Customer) {
                         //로그인 확인
-                        var _a = [logInSession.id, logInSession.name], signedId_2 = _a[0], signedName_2 = _a[1];
-                        database.selectReservedBookById(signedId_2).then(function (res) {
+                        var templateObj_2 = {
+                            date: dateModule_1.getFullDate(today),
+                            alertMsg: msg,
+                            id: logInSession.id,
+                            name: logInSession.name,
+                            booksToShow: new Array(),
+                        };
+                        database.selectReservedBookById(logInSession.id).then(function (res) {
                             //예약 도서 조회
                             switch (res.status) {
                                 case dbconfig_1.SELECT_SOMETHING:
                                     //예약 도서 존재 - 반영하여 응답
-                                    resolve(new classDomain_1.Responsable(200, reservedTemplate_1.default(signedId_2, signedName_2, res.rows, today, msg)));
+                                    templateObj_2.booksToShow = res.rows;
+                                    resolve(new classDomain_1.Responsable(200, reservePage(templateObj_2)));
                                     break;
                                 case dbconfig_1.SELECT_NOTHING:
                                     //존재하지 않음 - 반영하여 응답
-                                    resolve(new classDomain_1.Responsable(200, reservedTemplate_1.default(signedId_2, signedName_2, [], today, msg)));
+                                    templateObj_2.booksToShow = [];
+                                    resolve(new classDomain_1.Responsable(200, reservePage(templateObj_2)));
                                     break;
                                 default:
                                     //조회 실패

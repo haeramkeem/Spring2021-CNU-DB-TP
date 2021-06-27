@@ -1,0 +1,21 @@
+extend ./layout/mypageLayout.pug
+
+block sideMenu
+    a#info-box.ahover.selected(href="/page/pinfo") Personal Information
+    a#rent-box.ahover(href="/page/rent") Rented Books
+    a#reserve-box.ahover(href="/page/reserve") Reserved Books
+
+block articleBox
+    h2#atricle-title-box Personal Information
+    #article-content-box
+        div ID : #{id}
+        div Name : #{name}
+        form(action="/pinfo" method="POST")
+            label Password :
+                input.no-appearance.ihover.info-input(type="password" name="pw")
+            br
+            label Email :
+                input.no-appearance.ihover.info-input(type="text" name="email")
+            br
+            br
+            input#content-submit.small-button(type="submit" value="Modify Information")

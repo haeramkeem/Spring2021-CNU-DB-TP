@@ -1,15 +1,10 @@
 import * as fs from 'fs';
 import * as database from '../repository/database';
 import * as mailer from 'nodemailer';
-import {Customer, SearchForm, Responsable, DBForm} from '../domain/classDomain';
+import { Customer, SearchForm, Responsable, DBForm } from '../domain/classDomain';
 import { SELECT_SOMETHING, SELECT_NOTHING, DB_CHANGED, DB_ERROR } from '../repository/dbconfig';
+import { getFullDate } from '../module/dateModule';
 import pug from 'pug';
-
-import getSearchTemplate from '../template/searchTemplate';
-import getPinfoTemplate from '../template/pinfoTemplate';
-import getRentedTemplate from '../template/rentedTemplate';
-import getReservedTemplate from '../template/reservedTemplate';
-import getAdminTemplate from '../template/adminTemplates';
 
 const ROOT_DIR = __dirname.replace("\\service", "");
 const MAILER_SENDER = "haeram.kim1@gmail.com";
@@ -301,12 +296,12 @@ export function loadSignPage(msg?: string) {
     //로그아웃
     logInSession = null;
     const signPage = pug.compileFile(ROOT_DIR + "/view/signIn.pug");
-    return new Responsable(200, signPage({msg: msg}));
+    return new Responsable(200, signPage({alertMsg: msg}));
 }
 
 export function loadSignUpPage(msg?: string) {
     const signUpPage = pug.compileFile(ROOT_DIR + "/view/signUp.pug")
-    return new Responsable(200, signUpPage({msg: msg}));
+    return new Responsable(200, signUpPage({alertMsg: msg}));
 }
 
 export async function loadAdminPage() {
@@ -317,9 +312,17 @@ export async function loadAdminPage() {
                 //통계 2
                 getStat3().then(res3 => {
                     //통계 3
-                    if(res1 instanceof Array && res2 instanceof Array && res3 instanceof Array) {
+                    if(res1 instanceof Array && res1[0] instanceof Array && res2 instanceof Array && res3 instanceof Array) {
                         //통계 결과 조회 성공
-                        resolve(new Responsable(200, getAdminTemplate(today, res1, res2, res3)))
+                        const adminPage = pug.compileFile(ROOT_DIR + "/view/admin.pug");
+                        let templateObj = {
+                            date: getFullDate(today),
+                            alertMsg: "",
+                            count: res1[0][0],
+                            rents: res2,
+                            ranks: res3,
+                        };
+                        resolve(new Responsable(200, adminPage(templateObj)));
                     } else {
                         //실패
                         reject(409);
@@ -331,6 +334,7 @@ export async function loadAdminPage() {
 }
 
 export async function loadSearchPage(books?: unknown[], msg?: string) {
+    const searchPage = pug.compileFile(ROOT_DIR + "/view/searchBooks.pug");
     return new Promise<Responsable>((resolve, reject) => {
         if(typeof books === "undefined") {
             database.selectAllBook().then(res => {
@@ -339,7 +343,12 @@ export async function loadSearchPage(books?: unknown[], msg?: string) {
                     case SELECT_SOMETHING :
                     case SELECT_NOTHING :
                         //조회된 도서 반영하여 응답
-                        resolve(new Responsable(200, getSearchTemplate(res.rows, today, msg)));
+                        let templateObj = {
+                            date: getFullDate(today),
+                            booksToShow: res.rows,
+                            alertMsg: msg,
+                        }
+                        resolve(new Responsable(200, searchPage(templateObj)));
                         break;
                     default :
                         //조회 실패
@@ -347,7 +356,12 @@ export async function loadSearchPage(books?: unknown[], msg?: string) {
                 }
             });
         } else {
-            resolve(new Responsable(200, getSearchTemplate(books, today, msg)));
+            let templateObj = {
+                date: getFullDate(today),
+                booksToShow: books,
+                alertMeg: msg
+            }
+            resolve(new Responsable(200, searchPage(templateObj)));
         }
     }).catch(err => errorHandler(err));
 }
@@ -355,9 +369,15 @@ export async function loadSearchPage(books?: unknown[], msg?: string) {
 export function loadPinfoPage(msg?: string) {
     if(logInSession instanceof Customer) {
         //로그인 확인
-        let [signedId, signedName] = [logInSession.id, logInSession.name];
+        const pinfoPage = pug.compileFile(ROOT_DIR + "/view/pinfo.pug");
+        let templateObj = {
+            date: today,
+            id: logInSession.id,
+            name: logInSession.name,
+            alertMsg: msg,
+        }
         //고객정보 변결창 응답
-        return new Responsable(200, getPinfoTemplate(signedId, signedName, today, msg));
+        return new Responsable(200, pinfoPage(templateObj));
     } else {
         //로그아웃됨
         return new Responsable(401, "401 : Unauthorized");
@@ -365,20 +385,29 @@ export function loadPinfoPage(msg?: string) {
 }
 
 export async function loadRentedPage(msg?: string) {
+    const rentPage = pug.compileFile(ROOT_DIR + "/view/rented.pug");
     return new Promise<Responsable>((resolve, reject) => {
         if(logInSession instanceof Customer) {
             //로그인 확인
-            let [signedId, signedName] = [logInSession.id, logInSession.name];
-            database.selectRentedBookById(signedId).then(res => {
+            let templateObj = {
+                date: getFullDate(today),
+                alertMsg: msg,
+                id: logInSession.id,
+                name: logInSession.name,
+                booksToShow: new Array(),
+            }
+            database.selectRentedBookById(logInSession.id).then(res => {
                 //대여 도서 조회
                 switch (res.status) {
                     case SELECT_SOMETHING :
                         //대여 도서 존재 - 반영하여 응답
-                        resolve(new Responsable(200, getRentedTemplate(signedId, signedName, res.rows, today, msg)));
+                        templateObj.booksToShow = res.rows;
+                        resolve(new Responsable(200, rentPage(templateObj)));
                         break;
                     case SELECT_NOTHING :
                         //대여 도서 존재하지 않음 - 없음으로 반영
-                        resolve(new Responsable(200, getRentedTemplate(signedId, signedName, [], today, msg)));
+                        templateObj.booksToShow = [];
+                        resolve(new Responsable(200, rentPage(templateObj)));
                         break;
                     default :
                         //조회 실패
@@ -393,20 +422,29 @@ export async function loadRentedPage(msg?: string) {
 }
 
 export async function loadReservedPage(msg?: string) {
+    const reservePage = pug.compileFile(ROOT_DIR + "/view/reserved.pug");
     return new Promise<Responsable>((resolve, reject) => {
         if(logInSession instanceof Customer) {
             //로그인 확인
-            let [signedId, signedName] = [logInSession.id, logInSession.name];
-            database.selectReservedBookById(signedId).then(res => {
+            let templateObj = {
+                date: getFullDate(today),
+                alertMsg: msg,
+                id: logInSession.id,
+                name: logInSession.name,
+                booksToShow: new Array(),
+            }
+            database.selectReservedBookById(logInSession.id).then(res => {
                 //예약 도서 조회
                 switch (res.status) {
                     case SELECT_SOMETHING :
                         //예약 도서 존재 - 반영하여 응답
-                        resolve(new Responsable(200, getReservedTemplate(signedId, signedName, res.rows, today, msg)));
+                        templateObj.booksToShow = res.rows;
+                        resolve(new Responsable(200, reservePage(templateObj)));
                         break;
                     case SELECT_NOTHING :
                         //존재하지 않음 - 반영하여 응답
-                        resolve(new Responsable(200, getReservedTemplate(signedId, signedName, [], today, msg)));
+                        templateObj.booksToShow = [];
+                        resolve(new Responsable(200,reservePage(templateObj)));
                         break;
                     default :
                         //조회 실패

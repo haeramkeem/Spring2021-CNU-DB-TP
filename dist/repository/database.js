@@ -182,7 +182,7 @@ exports.selectRentedBookByIsbn = selectRentedBookByIsbn;
 function selectRentedBookById(id) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author), e.exttimes, e.daterented, e.datedue\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE e.cno LIKE '" + id + "' \n        GROUP BY e.isbn, e.title, e.publisher, e.year, e.exttimes, e.daterented, e.datedue ")];
+            return [2 /*return*/, execQuery("\n        SELECT e.isbn, e.title, e.publisher, e.year, MAX(a.author), e.exttimes, e.daterented, e.datedue\n        FROM ebook e JOIN authors a \n        ON e.isbn = a.isbn \n        WHERE e.cno LIKE '" + id + "' \n        GROUP BY e.isbn, e.title, e.publisher, e.year, e.exttimes, e.daterented, e.datedue \n        ORDER BY e.isbn ")];
         });
     });
 }

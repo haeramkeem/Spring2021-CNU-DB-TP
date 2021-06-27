@@ -1,0 +1,22 @@
+mixin blankRow
+    tr <td></td><td></td><td></td><td></td><td></td><td></td>
+
+mixin printBook(book)
+    tr
+        td= book[0]
+        td= book[1]
+        td= book[2]
+        td= book[3]
+        td= book[4]
+        td 
+            form(action="/rent" method="POST")
+                input(type="hidden" name="isbn" value=book[0])
+                input.small-button(type="submit" value="대여")
+            form(action="/reserve" method="POST")
+                input(type="hidden" name="isbn" value=book[0])
+                input.small-button(type="submit" value="예약")
+
+each book in booksToShow
+    +printBook(book)
+- for(let i = 0; i < 19 - booksToShow.length; i++)
+    +blankRow

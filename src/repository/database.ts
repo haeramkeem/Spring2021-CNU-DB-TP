@@ -123,7 +123,8 @@ export async function selectRentedBookById(id: string) {
         FROM ebook e JOIN authors a 
         ON e.isbn = a.isbn 
         WHERE e.cno LIKE '${id}' 
-        GROUP BY e.isbn, e.title, e.publisher, e.year, e.exttimes, e.daterented, e.datedue `);
+        GROUP BY e.isbn, e.title, e.publisher, e.year, e.exttimes, e.daterented, e.datedue 
+        ORDER BY e.isbn `);
 }
 
 export async function selectReservedBookById(id: string) {

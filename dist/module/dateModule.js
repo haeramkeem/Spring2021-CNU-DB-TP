@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dateToString = exports.month = exports.week = void 0;
+exports.getFullDate = exports.dateToString = exports.month = exports.week = void 0;
 function week(today) {
     //Date객체로 문자열 요일 변환
     // Sunday - Saturday : 0 - 6
@@ -60,3 +60,7 @@ function dateToString(date) {
     return year + i2s(month) + i2s(day);
 }
 exports.dateToString = dateToString;
+function getFullDate(today) {
+    return week(today) + ", " + month(today) + " " + today.getDate() + ", " + today.getFullYear();
+}
+exports.getFullDate = getFullDate;

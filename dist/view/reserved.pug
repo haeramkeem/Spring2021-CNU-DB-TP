@@ -1,0 +1,20 @@
+extend ./layout/mypageLayout.pug
+
+block sideMenu
+    a#info-box.ahover(href="/page/pinfo") Personal Information
+    a#rent-box.ahover(href="/page/rent") Rented Books
+    a#reserve-box.ahover.selected(href="/page/reserve") Reserved Books
+
+block articleBox
+    h2#atricle-title-box Rented Books
+    #article-content-box
+        table.result-box 
+            thead 
+                th ISBN
+                th TITLE
+                th PUBLISHER
+                th YEAR
+                th AUTHOR
+                th CANCEL RESERVATION
+            tbody 
+                include ./partials/reserveResult.pug
