@@ -64,13 +64,12 @@ var database = __importStar(require("../repository/database"));
 var mailer = __importStar(require("nodemailer"));
 var classDomain_1 = require("../domain/classDomain");
 var dbconfig_1 = require("../repository/dbconfig");
+var pug_1 = __importDefault(require("pug"));
 var searchTemplate_1 = __importDefault(require("../template/searchTemplate"));
 var pinfoTemplate_1 = __importDefault(require("../template/pinfoTemplate"));
 var rentedTemplate_1 = __importDefault(require("../template/rentedTemplate"));
 var reservedTemplate_1 = __importDefault(require("../template/reservedTemplate"));
 var adminTemplates_1 = __importDefault(require("../template/adminTemplates"));
-var signTemplate_1 = __importDefault(require("../template/signTemplate"));
-var signUpTemplate_1 = __importDefault(require("../template/signUpTemplate"));
 var ROOT_DIR = __dirname.replace("\\service", "");
 var MAILER_SENDER = "haeram.kim1@gmail.com";
 var MAILER_PASS = "revell1998115";
@@ -413,11 +412,13 @@ exports.doCancelReservation = doCancelReservation;
 function loadSignPage(msg) {
     //로그아웃
     logInSession = null;
-    return new classDomain_1.Responsable(200, signTemplate_1.default(msg));
+    var signPage = pug_1.default.compileFile(ROOT_DIR + "/view/signIn.pug");
+    return new classDomain_1.Responsable(200, signPage({ msg: msg }));
 }
 exports.loadSignPage = loadSignPage;
 function loadSignUpPage(msg) {
-    return new classDomain_1.Responsable(200, signUpTemplate_1.default(msg));
+    var signUpPage = pug_1.default.compileFile(ROOT_DIR + "/view/signUp.pug");
+    return new classDomain_1.Responsable(200, signUpPage({ msg: msg }));
 }
 exports.loadSignUpPage = loadSignUpPage;
 function loadAdminPage() {

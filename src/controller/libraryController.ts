@@ -119,23 +119,26 @@ function libraryController(request: http.IncomingMessage, response: http.ServerR
                     responseHandler(response, searchResult);
                 })
             }
-        } else if(path === "/" || path === "/index.html") {
+        } else if(path === "/") {
             //로그인창 요청
             responseHandler(response, libraryService.loadSignPage());
-        } else if(path === "/page/pinfo.html") {
+        } else if(path === "/page/signup") {
+            //개인정보수정창 요청
+            responseHandler(response, libraryService.loadSignUpPage());
+        } else if(path === "/page/pinfo") {
             //개인정보수정창 요청
             responseHandler(response, libraryService.loadPinfoPage());
-        } else if(path === "/page/rent.html") {
+        } else if(path === "/page/rent") {
             //도서대여 요청
             libraryService.loadRentedPage().then(page => {
                 responseHandler(response, page);
             });
-        } else if(path === "/page/reserve.html") {
+        } else if(path === "/page/reserve") {
             //도서예약창 요청
             libraryService.loadReservedPage().then(page => {
                 responseHandler(response, page);
             });
-        } else if(path === "/page/search.html") {
+        } else if(path === "/page/search") {
             //도서검색창 요청
             libraryService.loadSearchPage().then(page => {
                 responseHandler(response, page);

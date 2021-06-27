@@ -3,13 +3,13 @@ import * as database from '../repository/database';
 import * as mailer from 'nodemailer';
 import {Customer, SearchForm, Responsable, DBForm} from '../domain/classDomain';
 import { SELECT_SOMETHING, SELECT_NOTHING, DB_CHANGED, DB_ERROR } from '../repository/dbconfig';
+import pug from 'pug';
+
 import getSearchTemplate from '../template/searchTemplate';
 import getPinfoTemplate from '../template/pinfoTemplate';
 import getRentedTemplate from '../template/rentedTemplate';
 import getReservedTemplate from '../template/reservedTemplate';
 import getAdminTemplate from '../template/adminTemplates';
-import getSignTemplate from '../template/signTemplate';
-import getSignUpTemplate from '../template/signUpTemplate';
 
 const ROOT_DIR = __dirname.replace("\\service", "");
 const MAILER_SENDER = "haeram.kim1@gmail.com";
@@ -300,11 +300,13 @@ export async function doCancelReservation(isbn: string) {
 export function loadSignPage(msg?: string) {
     //로그아웃
     logInSession = null;
-    return new Responsable(200, getSignTemplate(msg));
+    const signPage = pug.compileFile(ROOT_DIR + "/view/signIn.pug");
+    return new Responsable(200, signPage({msg: msg}));
 }
 
 export function loadSignUpPage(msg?: string) {
-    return new Responsable(200, getSignUpTemplate(msg))
+    const signUpPage = pug.compileFile(ROOT_DIR + "/view/signUp.pug")
+    return new Responsable(200, signUpPage({msg: msg}));
 }
 
 export async function loadAdminPage() {

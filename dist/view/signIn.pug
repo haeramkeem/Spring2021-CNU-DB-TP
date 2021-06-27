@@ -1,0 +1,13 @@
+extends ./layout/signLayout.pug 
+
+block inputBox 
+    #sign-box.center
+        form(action="/signin" method="POST")
+            label#signin-id-box.input-box ID
+                input.hover-box(type="text" name="id")
+            label#signin-pw-box.input-box PW
+                input.hover-box(type="password" name="pw")
+            #signin-submit-box.submit-box
+                input(type="submit" value="Sign In")
+            #signup-link-box 
+                a(href="/page/signup") Sign Up
