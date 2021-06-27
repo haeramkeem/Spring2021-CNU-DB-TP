@@ -1,0 +1,12 @@
+extend ./mainLayout.pug
+
+block movePage 
+    a.ahover(href="/page/search") Search Books
+
+block mainContainer 
+    #mypage-container.main-container
+        h1#container-title-box SIGN IN AS : #{id} - #{name}
+        aside#menu-box
+            block sideMenu
+        atticle#article-box
+            block articleBox

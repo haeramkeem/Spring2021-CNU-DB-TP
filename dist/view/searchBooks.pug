@@ -1,0 +1,30 @@
+extend ./layout/mainLayout.pug
+
+block movePage 
+    a.ahover(href="/page/pinfo") My Page
+
+block mainContainer 
+    #search-container.main-container
+        form#search-box(action="/searchbook" method="GET")
+            #select-box.query-box
+                select.no-appearance(name="type")
+                            option(value="title") TITLE
+                            option(value="publisher") PUBLISHER
+                            option(value="year") YEAR
+                            option(value="author") AUTHOR
+                            option(value="query") QUERY
+
+            #word-box.query-box 
+                input.no-appearance(type="text" name="keyword")
+            #submit-box.query-box
+                input.no-appearance(type="submit" value="SEARCH")
+        table.result-box
+            thead 
+                th ISBN
+                th TITLE
+                th PUBLISHER
+                th YEAR
+                th AUTHOR
+                th= 'RENT & RESERVE'
+            tbody#searchResult
+                include ./partials/searchResult.pug

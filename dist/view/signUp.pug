@@ -1,0 +1,15 @@
+extend ./layout/signLayout.pug
+
+block inputBox 
+    #signup-box.center 
+        form(action="/signup" method="POST")
+            label#signup-id-box.input-box ID 
+                input.hover-box(type="text" name="id")
+            label#signup-pw-box.input-box PW 
+                input.hover-box(type="password" name="pw")
+            label#signup-name-box.input-box Name 
+                input.hover-box(type="text" name="name")
+            label#signup-email-box.input-box Email
+                input.hover-box(type="email" name="email")
+            #signup-submit-box.submit-box
+                input(type="submit" value="Sign Up")

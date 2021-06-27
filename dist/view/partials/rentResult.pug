@@ -1,0 +1,30 @@
+mixin blankRow
+    tr <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+
+mixin dateToString(date)
+    td= date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate()
+
+mixin printBook(book)
+    tr
+        td= book[0]
+        td= book[1]
+        td= book[2]
+        td= book[3]
+        td= book[4]
+        +dateToString(book[6])
+        +dateToString(book[7])
+        td= book[5]
+        td 
+            form(action="/extend" method="POST")
+                input(type="hidden" name="isbn" value=book[0])
+                input(type="hidden" name="exttimes" value=book[5])
+                input.small-button(type="submit" value="연장")
+            form(action="/return" method="POST")
+                input(type="hidden" name="isbn" value=book[0])
+                input(type="hidden" name="title" value=book[1])
+                input.small-button(type="submit" value="반납")
+
+each book in booksToShow
+    +printBook(book)
+- for(let i = 0; i < 14 - booksToShow.length; i++)
+    +blankRow

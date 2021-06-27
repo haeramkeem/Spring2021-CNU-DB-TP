@@ -1,0 +1,46 @@
+extend ./layout/mainLayout.pug
+
+mixin rent(row)
+    tr 
+        td= row[0]
+        td= row[1]
+
+mixin rank(row)
+    tr 
+        td= row[0]
+        td= row[1]
+        td= row[2]
+        td= row[3]
+        td= row[4]
+
+block movePage 
+    a.ahover(href="/") Log Out
+
+block mainContainer 
+    #mypage-container.main-container
+        h1#container-title-box Library Administration
+        aside#menu-box
+            #info-box.selected Library Stats
+        atticle#article-box
+            h2#article-title-box Library Stats
+                #article-content-box
+                        div 지금까지 빌려간 책들중 집필에 참여한 한국사람의 명수 : #{count}
+                        .stat 학번별 지금까지 몇권이나 대출해갔는지에 대한 횟수와 모든 학생들에 대한 총 대출 횟수
+                            table.result-box
+                                thead
+                                    th 학번
+                                    th 대여횟수
+                                tbody 
+                                    each row of rents
+                                        +rent(row)
+                        .stat 대여 학생 학번별 정렬
+                            table.result-box
+                                thead
+                                    th 순위
+                                    th 학번
+                                    th 이름
+                                    th PW
+                                    th EMAIL
+                                tbody
+                                    each row of ranks
+                                        +rank(row)

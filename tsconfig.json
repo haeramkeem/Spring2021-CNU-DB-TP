@@ -70,5 +70,5 @@
   },
   "include": [
     "src/**/*"
-  ]
+, "deleted/signTemplate.ts"  ]
 }

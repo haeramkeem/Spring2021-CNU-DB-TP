@@ -56,3 +56,7 @@ export function dateToString(date: Date) {
     const i2s = ((num: number) => (num < 10 ? `0${num}` : `${num}`)); //월, 일 문자열 변환 함수
     return year + i2s(month) + i2s(day);
 }
+
+export function getFullDate(today: Date) {
+    return `${week(today)}, ${month(today)} ${today.getDate()}, ${today.getFullYear()}`
+}
